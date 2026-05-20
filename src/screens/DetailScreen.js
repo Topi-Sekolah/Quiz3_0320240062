@@ -1,243 +1,186 @@
-// src/screens/DetailScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ScrollView, SafeAreaView,
+  StyleSheet, ScrollView, Alert
 } from 'react-native';
-import BASE_URL from '../api/api';
+import { getHewanById, updateHewan, deleteHewan, createHewan } from '../api/api';
 
-export default function DetailScreen({ navigation, route }) {
-  const existingBuilding = route.params?.building || null;
+export default function DetailScreen({ route, navigation }) {
+  const { id, mode, data: itemData } = route.params || {};
+  const isEditMode = mode === 'edit';
+  const isAddMode = mode === 'add';
 
-  const [buildingName, setBuildingName] = useState(
-    existingBuilding ? existingBuilding.buildingName : ''
-  );
-  const [buildingType, setBuildingType] = useState(
-    existingBuilding ? String(existingBuilding.buildingType) : ''
-  );
-  const [location, setLocation] = useState(
-    existingBuilding ? existingBuilding.location : ''
-  );
-  const [buildingArea, setBuildingArea] = useState(
-    existingBuilding ? String(existingBuilding.buildingArea) : ''
-  );
-  const [price, setPrice] = useState(
-    existingBuilding ? String(existingBuilding.price) : ''
-  );
+  const [pemilik, setPemilik] = useState('');
+  const [jenis, setJenis] = useState('');
+  const [kandang, setKandang] = useState('');
+  const [berat, setBerat] = useState('');
 
-  // ── CREATE ──────────────────────────────────────────────────
-  const handleCreate = () => {
-    if (!buildingName || !buildingType || !location || !buildingArea) {
-      Alert.alert('Perhatian', 'Semua field harus diisi!');
+  useEffect(() => {
+    if (isEditMode && itemData) {
+      // Load dari data yang dikirim via navigation
+      setPemilik(itemData.pemilikHewan || '');
+      setJenis(itemData.jenisHewan || '');
+      setKandang(itemData.kandangHewan || '');
+      setBerat(String(itemData.beratHewan || ''));
+    }
+  }, [itemData]);
+
+  const handleAddData = async () => {
+    if (!pemilik || !jenis || !kandang || !berat) {
+      Alert.alert('Error', 'Semua field harus diisi!');
       return;
     }
-    if (buildingType !== '1' && buildingType !== '2') {
-      Alert.alert('Perhatian', 'Building Type harus 1 (Apartment) atau 2 (House)');
-      return;
+    try {
+      await createHewan({
+        pemilikHewan: pemilik,
+        jenisHewan: jenis,
+        kandangHewan: kandang,
+        beratHewan: parseInt(berat),
+      });
+      Alert.alert('Success', 'Data berhasil ditambahkan');
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert('Error', 'Gagal menambahkan data');
     }
-
-    const body = {
-      buildingName,
-      buildingType,
-      location,
-      buildingArea: parseInt(buildingArea),
-      // price dihitung otomatis di backend
-    };
-
-    fetch(BASE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-      .then(res => {
-        if (res.status === 201) return res.json();
-        throw new Error('Gagal membuat data');
-      })
-      .then(() => {
-        Alert.alert('Sukses', 'Data berhasil ditambahkan!', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
-      })
-      .catch(err => Alert.alert('Error', err.message));
   };
 
-  // ── DELETE ──────────────────────────────────────────────────
-  const handleDelete = () => {
-    if (!existingBuilding) {
-      Alert.alert('Info', 'Tidak ada data yang dipilih untuk dihapus.');
-      return;
+  const handleDelete = async () => {
+    try {
+      await deleteHewan(id);
+      Alert.alert('Success', 'Data berhasil dihapus');
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert('Error', 'Gagal menghapus data');
     }
-    Alert.alert(
-      'Konfirmasi Hapus',
-      `Yakin ingin menghapus "${existingBuilding.buildingName}"?`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: () => {
-            fetch(`${BASE_URL}/${existingBuilding.idBuilding}`, { method: 'DELETE' })
-              .then(res => {
-                if (res.ok) {
-                  Alert.alert('Sukses', 'Data berhasil dihapus!', [
-                    { text: 'OK', onPress: () => navigation.goBack() },
-                  ]);
-                } else {
-                  Alert.alert('Error', 'Gagal menghapus data.');
-                }
-              })
-              .catch(() => Alert.alert('Error', 'Koneksi gagal.'));
-          },
-        },
-      ]
-    );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header dengan back arrow */}
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>◀</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backBtn}>← </Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>In The House Apps</Text>
+        <Text style={styles.title}>Farm Apps_XXX</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.form}>
-
-        {/* Building Name */}
-        <Text style={styles.label}>Building Name</Text>
+      <View style={styles.form}>
+        <Text style={styles.label}>Pemilik</Text>
         <TextInput
           style={styles.input}
-          value={buildingName}
-          onChangeText={setBuildingName}
-          placeholder=""
+          value={pemilik}
+          onChangeText={setPemilik}
+          placeholder="Nama pemilik"
         />
 
-        {/* Building Type */}
-        <Text style={styles.label}>Building Type</Text>
+        <Text style={styles.label}>Jenis Hewan</Text>
         <TextInput
           style={styles.input}
-          value={buildingType}
-          onChangeText={setBuildingType}
-          placeholder=""
+          value={jenis}
+          onChangeText={setJenis}
+          placeholder="Sapi/Domba/Kambing"
+          editable={!isEditMode}
+        />
+
+        <Text style={styles.label}>Kandang</Text>
+        <TextInput
+          style={styles.input}
+          value={kandang}
+          onChangeText={setKandang}
+          placeholder="Nomor kandang"
+        />
+
+        <Text style={styles.label}>Berat (kg)</Text>
+        <TextInput
+          style={styles.input}
+          value={berat}
+          onChangeText={setBerat}
+          placeholder="Berat dalam kg"
           keyboardType="numeric"
+          editable={!isEditMode}
         />
 
-        {/* Location */}
-        <Text style={styles.label}>Location</Text>
-        <TextInput
-          style={styles.input}
-          value={location}
-          onChangeText={setLocation}
-          placeholder=""
-        />
+        {isEditMode && itemData && (
+          <>
+            <Text style={styles.label}>Harga (Auto-calculated)</Text>
+            <TextInput
+              style={[styles.input, styles.inputDisabled]}
+              value={`Rp ${itemData.hargaHewan?.toLocaleString('id-ID')}`}
+              editable={false}
+            />
+          </>
+        )}
 
-        {/* Building Area */}
-        <Text style={styles.label}>Building Area</Text>
-        <TextInput
-          style={styles.input}
-          value={buildingArea}
-          onChangeText={setBuildingArea}
-          placeholder=""
-          keyboardType="numeric"
-        />
-
-        {/* Price */}
-        <Text style={styles.label}>Price</Text>
-        <TextInput
-          style={styles.input}
-          value={price}
-          onChangeText={setPrice}
-          placeholder=""
-          keyboardType="numeric"
-          editable={false}  // readonly, dihitung otomatis
-        />
-
-        {/* Buttons */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={[styles.btnCreate, existingBuilding && styles.btnDisabled]} 
-            onPress={handleCreate}
-            disabled={existingBuilding !== null}
-          >
-            <Text style={[styles.btnCreateText, existingBuilding && styles.btnDisabledText]}>+ Add Data</Text>
+        {isAddMode ? (
+          <TouchableOpacity style={styles.btnAdd} onPress={handleAddData}>
+            <Text style={styles.btnText}>+ Add Data</Text>
           </TouchableOpacity>
-          {existingBuilding && (
-            <TouchableOpacity style={styles.btnDelete} onPress={handleDelete}>
-              <Text style={styles.btnDeleteText}>Delete</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-      </ScrollView>
-    </SafeAreaView>
+        ) : isEditMode ? (
+          <TouchableOpacity style={styles.btnDelete} onPress={handleDelete}>
+            <Text style={styles.btnText}>Delete</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    backgroundColor: '#fff',
+    borderBottomColor: '#e0e0e0',
   },
-  backBtn: { marginRight: 10 },
-  backArrow: { fontSize: 18, color: '#333' },
-  headerTitle: { fontSize: 16, fontWeight: 'bold', color: '#222' },
-
-  form: { padding: 18 },
-
+  backBtn: {
+    fontSize: 24,
+    marginRight: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  form: {
+    padding: 16,
+  },
   label: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#222',
-    marginTop: 14,
-    marginBottom: 5,
+    marginBottom: 6,
+    marginTop: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#bbb',
-    borderRadius: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
     fontSize: 14,
-    color: '#333',
-    backgroundColor: '#fff',
   },
-
-  buttonRow: {
-    flexDirection: 'row',
-    marginTop: 28,
-    gap: 10,
+  inputDisabled: {
+    backgroundColor: '#f5f5f5',
+    color: '#666',
   },
-  btnCreate: {
-    flex: 1,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    paddingVertical: 11,
+  btnAdd: {
+    backgroundColor: '#4A90D9',
+    padding: 14,
+    borderRadius: 8,
     alignItems: 'center',
+    marginTop: 24,
   },
-  btnCreateText: { color: '#333', fontWeight: '600', fontSize: 13 },
-  btnDisabled: {
-    backgroundColor: '#ccc',
-    opacity: 0.5,
-  },
-  btnDisabledText: {
-    color: '#999',
-  },
-
   btnDelete: {
-    flex: 1,
-    backgroundColor: '#e53935',
-    borderRadius: 4,
-    paddingVertical: 11,
+    backgroundColor: '#FF0000',
+    padding: 14,
+    borderRadius: 8,
     alignItems: 'center',
+    marginTop: 24,
   },
-  btnDeleteText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

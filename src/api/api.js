@@ -1,10 +1,41 @@
-// src/api/api.js
-// Ganti BASE_URL dengan IP lokal komputer Anda (bukan localhost untuk Android emulator)
-// Contoh: http://192.168.1.10:8080
- 
-const BASE_URL = 'http://10.1.25.31:8080/api/buildings';
-// 10.0.2.2 = alias localhost untuk Android Emulator
-// Untuk device fisik: ganti dengan IP WiFi komputer Anda
- 
-export default BASE_URL;
- 
+const BASE_URL = 'http://10.1.25.31:8080';
+
+export const getAllHewan = async () => {
+  const res = await fetch(`${BASE_URL}/hewan/all`);
+  return res.json();
+};
+
+export const getHewanById = async (id) => {
+  const res = await fetch(`${BASE_URL}/hewan/${id}`);
+  return res.json();
+};
+
+export const getHewanByCategory = async (jenis) => {
+  const res = await fetch(`${BASE_URL}/hewan/category/${jenis}`);
+  return res.json();
+};
+
+export const createHewan = async (data) => {
+  const res = await fetch(`${BASE_URL}/hewan/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+};
+
+export const updateHewan = async (id, data) => {
+  const res = await fetch(`${BASE_URL}/hewan/update/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+};
+
+export const deleteHewan = async (id) => {
+  const res = await fetch(`${BASE_URL}/hewan/delete/${id}`, {
+    method: 'DELETE',
+  });
+  return res.text();
+};
